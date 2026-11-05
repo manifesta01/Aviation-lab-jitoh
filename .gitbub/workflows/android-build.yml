@@ -1,10 +1,10 @@
-
 name: Build Aviator Research Lab APK
 
 on:
   workflow_dispatch:
   push:
-    branches: [main, master]
+    branches:
+      - main
 
 jobs:
   build:
@@ -13,22 +13,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Find and extract Android project ZIP
-        run: |
-          ZIP_FILE=$(find . -maxdepth 2 -iname "AviatorResearchLab.zip" -print -quit)
-          if [ -z "$ZIP_FILE" ]; then
-            echo "AviatorResearchLab.zip was not found"
-            exit 1
-          fi
-          mkdir extracted
-          unzip -q "$ZIP_FILE" -d extracted
-          PROJECT_ROOT=$(dirname "$(find extracted -name settings.gradle.kts -print -quit)")
-          if [ -z "$PROJECT_ROOT" ] || [ "$PROJECT_ROOT" = "extracted" ]; then
-            echo "Android project files were not found in the ZIP"
-            exit 1
-          fi
-          cp -R "$PROJECT_ROOT"/. .
 
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -41,7 +25,14 @@ jobs:
         with:
           gradle-version: '8.9'
 
-      - name: Build debug APK
+      - name: Extract Android source
+        run: |
+          unzip aviator_research_lab_android_source_v01.zip -d project
+          PROJECT_DIR=$(find project -name settings.gradle.kts -printf '%h\n' | head -n 1)
+          test -n "$PROJECT_DIR"
+          cp -R "$PROJECT_DIR"/. ./ 
+
+      - name: Build APK
         run: gradle assembleDebug
 
       - name: Upload APK
